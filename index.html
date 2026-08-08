@@ -1,0 +1,2197 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<meta
+    name="theme-color"
+    content="#f0fdf4">
+
+<title>Beslenme Takibi</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background: #f7faf8;
+    color: #334155;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.hide-scrollbar {
+    scrollbar-width: none;
+}
+
+.day-button {
+    min-width: 82px;
+}
+
+.checkbox {
+    appearance: none;
+
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+
+    border: 2px solid #cbd5e1;
+
+    border-radius: 9px;
+
+    background: white;
+
+    position: relative;
+}
+
+.checkbox:checked {
+    background: #22c55e;
+    border-color: #22c55e;
+}
+
+.checkbox:checked::after {
+    content: "✓";
+
+    position: absolute;
+
+    color: white;
+
+    font-size: 18px;
+
+    font-weight: 700;
+
+    left: 4px;
+    top: 0;
+}
+
+.meal-card {
+    transition: transform .15s ease;
+}
+
+.meal-card:active {
+    transform: scale(.99);
+}
+
+.bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+
+/* NOTLAR */
+
+.note-content {
+    line-height: 1.85;
+    font-size: 16px;
+}
+
+.note-content p {
+    margin-bottom: 18px;
+}
+
+.note-bullet {
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 10px;
+
+    margin-bottom: 14px;
+}
+
+.note-bullet-mark {
+    color: #34d399;
+
+    font-weight: 800;
+
+    font-size: 20px;
+
+    line-height: 1.65;
+}
+
+.note-accordion-content {
+    max-height: 0;
+
+    opacity: 0;
+
+    overflow: hidden;
+
+    transition:
+        max-height .35s ease,
+        opacity .25s ease;
+}
+
+.note-accordion-content.open {
+    opacity: 1;
+}
+
+.note-arrow {
+    transition:
+        transform .25s ease;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     LOGIN
+===================================================== -->
+
+<div
+    id="loginScreen"
+    class="hidden min-h-screen flex items-center justify-center px-5">
+
+    <div
+        class="w-full max-w-md bg-white rounded-3xl shadow-sm border border-slate-100 p-7">
+
+        <div class="text-center">
+
+            <div
+                class="w-16 h-16 mx-auto rounded-2xl bg-green-100 flex items-center justify-center text-3xl">
+
+                🌿
+
+            </div>
+
+            <h1 class="text-2xl font-bold mt-5">
+                Beslenme Takibi
+            </h1>
+
+        </div>
+
+
+        <div class="space-y-4 mt-7">
+
+            <input
+                id="loginEmail"
+                type="email"
+                placeholder="E-posta"
+                class="w-full px-4 py-4 rounded-2xl border">
+
+            <input
+                id="loginPassword"
+                type="password"
+                placeholder="Şifre"
+                class="w-full px-4 py-4 rounded-2xl border">
+
+            <button
+                id="loginButton"
+                class="w-full py-4 rounded-2xl bg-green-500 text-white font-bold">
+
+                Giriş Yap
+
+            </button>
+
+            <div
+                id="loginError"
+                class="hidden text-center text-red-500 text-sm">
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     APP
+===================================================== -->
+
+<div
+    id="app"
+    class="hidden min-h-screen pb-28">
+
+
+<header
+    class="bg-white border-b border-slate-100 sticky top-0 z-40">
+
+    <div
+        class="max-w-3xl mx-auto px-4 py-4">
+
+        <div class="flex justify-between items-center">
+
+            <div>
+
+                <div
+                    class="text-xs text-slate-400 font-semibold">
+
+                    BESLENME TAKİBİ
+
+                </div>
+
+                <h1
+                    id="headerTitle"
+                    class="text-xl font-bold mt-1">
+
+                    3. Gün
+
+                </h1>
+
+                <p
+                    id="headerDate"
+                    class="text-sm text-slate-500 mt-1">
+                </p>
+
+            </div>
+
+
+            <div
+                class="w-11 h-11 rounded-2xl bg-green-100 flex items-center justify-center text-xl">
+
+                🌿
+
+            </div>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+
+<!-- GÜN SEÇİMİ -->
+
+<section
+    class="bg-white border-b">
+
+    <div
+        class="max-w-3xl mx-auto px-4 py-4">
+
+        <div
+            id="daySelector"
+            class="flex gap-3 overflow-x-auto hide-scrollbar">
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- MAIN -->
+
+<main
+    class="max-w-3xl mx-auto px-4 py-6">
+
+
+<!-- =====================================================
+     SU TAKİBİ
+===================================================== -->
+<section id="waterSection" class="mb-5"><div id="waterContent"></div></section>
+
+<!-- =====================================================
+     YEMEK
+===================================================== -->
+
+<section id="foodSection">
+
+    <div
+        id="foodContent">
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     GÖREVLER
+===================================================== -->
+
+<section
+    id="tasksSection"
+    class="hidden">
+
+    <div class="mb-5">
+
+        <h2 class="text-xl font-bold">
+            Günlük Görevler
+        </h2>
+
+        <p class="text-sm text-slate-500 mt-1">
+            Tamamladığınız görevleri işaretleyin.
+        </p>
+
+    </div>
+
+    <div id="tasksContent"></div>
+
+</section>
+
+
+
+<!-- =====================================================
+     NOTLAR
+===================================================== -->
+
+<section
+    id="notesSection"
+    class="hidden">
+
+    <div id="notesContent"></div>
+
+</section>
+
+
+</main>
+
+</div>
+
+
+
+<!-- =====================================================
+     BOTTOM NAV
+===================================================== -->
+
+<nav
+    id="bottomNav"
+    class="hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t z-50 bottom-nav">
+
+    <div
+        class="max-w-3xl mx-auto grid grid-cols-3 h-20">
+
+
+        <button
+            id="navFood"
+            class="flex flex-col justify-center items-center text-green-600">
+
+            <span class="text-xl">
+                🍽️
+            </span>
+
+            <span class="text-xs font-semibold">
+                Yemek
+            </span>
+
+        </button>
+
+
+        <button
+            id="navTasks"
+            class="flex flex-col justify-center items-center text-slate-400">
+
+            <span class="text-xl">
+                ✓
+            </span>
+
+            <span class="text-xs font-semibold">
+                Görevler
+            </span>
+
+        </button>
+
+
+        <button
+            id="navNotes"
+            class="flex flex-col justify-center items-center text-slate-400">
+
+            <span class="text-xl">
+                📌
+            </span>
+
+            <span class="text-xs font-semibold">
+                Önemli Notlar
+            </span>
+
+        </button>
+
+    </div>
+
+</nav>
+
+
+
+<script type="module">
+
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+    getAuth,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    setPersistence,
+    browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+/* =====================================================
+   FIREBASE
+===================================================== */
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyCsyz0RwGfBzxbczDeSFhAtG0E2ECWjKAc",
+
+    authDomain:
+        "pofuduk-c0d84.firebaseapp.com",
+
+    projectId:
+        "pofuduk-c0d84",
+
+    storageBucket:
+        "pofuduk-c0d84.firebasestorage.app",
+
+    messagingSenderId:
+        "841866877724",
+
+    appId:
+        "1:841866877724:web:c3b448a5153b55682478d9"
+
+};
+
+
+const app =
+    initializeApp(
+        firebaseConfig
+    );
+
+const auth =
+    getAuth(app);
+
+const db =
+    getFirestore(app);
+
+
+/* =====================================================
+   BAŞLANGIÇ
+===================================================== */
+
+const DIET_START_DAY = 3;
+
+const DIET_START_DATE =
+    new Date(
+        2026,
+        7,
+        9
+    );
+
+
+let currentDay = 3;
+
+let currentTab = "food";
+
+let currentDayData = {};
+
+let globalData = {};
+
+
+/* =====================================================
+   ELEMENTLER
+===================================================== */
+
+const loginScreen =
+    document.getElementById(
+        "loginScreen"
+    );
+
+const appElement =
+    document.getElementById(
+        "app"
+    );
+
+const bottomNav =
+    document.getElementById(
+        "bottomNav"
+    );
+
+
+/* =====================================================
+   AUTH
+===================================================== */
+
+await setPersistence(
+    auth,
+    browserLocalPersistence
+);
+
+
+onAuthStateChanged(
+    auth,
+    async user => {
+
+        if (!user) {
+
+            loginScreen.classList.remove(
+                "hidden"
+            );
+
+            appElement.classList.add(
+                "hidden"
+            );
+
+            bottomNav.classList.add(
+                "hidden"
+            );
+
+            return;
+
+        }
+
+
+        loginScreen.classList.add(
+            "hidden"
+        );
+
+        appElement.classList.remove(
+            "hidden"
+        );
+
+        bottomNav.classList.remove(
+            "hidden"
+        );
+
+
+        currentDay =
+            calculateCurrentDay();
+
+
+        createDaySelector();
+
+        updateDaySelector();
+
+        await loadGlobalData();
+
+        await loadDay(
+            currentDay
+        );
+
+        switchTab(
+            "food"
+        );
+
+    }
+);
+
+
+/* =====================================================
+   LOGIN
+===================================================== */
+
+document
+    .getElementById(
+        "loginButton"
+    )
+    .addEventListener(
+        "click",
+        async () => {
+
+            const email =
+                document.getElementById(
+                    "loginEmail"
+                ).value.trim();
+
+
+            const password =
+                document.getElementById(
+                    "loginPassword"
+                ).value;
+
+
+            const errorElement =
+                document.getElementById(
+                    "loginError"
+                );
+
+
+            errorElement.classList.add(
+                "hidden"
+            );
+
+
+            try {
+
+                await signInWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
+                );
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                errorElement.textContent =
+                    "E-posta veya şifre hatalı.";
+
+                errorElement.classList.remove(
+                    "hidden"
+                );
+
+            }
+
+        }
+    );
+
+
+/* =====================================================
+   TARİH
+===================================================== */
+
+function calculateCurrentDay() {
+
+    const today =
+        new Date();
+
+    today.setHours(
+        0,
+        0,
+        0,
+        0
+    );
+
+
+    const start =
+        new Date(
+            DIET_START_DATE
+        );
+
+    start.setHours(
+        0,
+        0,
+        0,
+        0
+    );
+
+
+    const diff =
+        Math.floor(
+            (
+                today - start
+            ) /
+            86400000
+        );
+
+
+    return Math.min(
+        30,
+        Math.max(
+            DIET_START_DAY,
+            DIET_START_DAY + diff
+        )
+    );
+
+}
+
+
+function getDateForDay(
+    day
+) {
+
+    const date =
+        new Date(
+            DIET_START_DATE
+        );
+
+
+    date.setDate(
+        date.getDate() +
+        day -
+        DIET_START_DAY
+    );
+
+
+    return date;
+
+}
+
+
+function formatDate(
+    date
+) {
+
+    return date.toLocaleDateString(
+        "tr-TR",
+        {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+        }
+    );
+
+}
+
+
+/* =====================================================
+   GÜN SEÇİMİ
+===================================================== */
+
+function createDaySelector() {
+
+    const container =
+        document.getElementById(
+            "daySelector"
+        );
+
+
+    container.innerHTML =
+        "";
+
+
+    for (
+        let day =
+            DIET_START_DAY;
+
+        day <= 30;
+
+        day++
+    ) {
+
+        const button =
+            document.createElement(
+                "button"
+            );
+
+
+        button.dataset.day =
+            day;
+
+
+        button.className =
+            "day-button flex-shrink-0 px-4 py-3 rounded-2xl bg-slate-100 text-slate-500";
+
+
+        const date =
+            getDateForDay(
+                day
+            );
+
+
+        button.innerHTML = `
+
+            <div class="font-bold text-sm">
+                ${day}. Gün
+            </div>
+
+            <div class="text-[11px] mt-1">
+                ${date.toLocaleDateString(
+                    "tr-TR",
+                    {
+                        day: "numeric",
+                        month: "short"
+                    }
+                )}
+            </div>
+
+        `;
+
+
+        button.addEventListener(
+            "click",
+            async () => {
+
+                currentDay =
+                    day;
+
+
+                updateDaySelector();
+
+
+                await loadDay(
+                    day
+                );
+
+            }
+        );
+
+
+        container.appendChild(
+            button
+        );
+
+    }
+
+}
+
+
+function updateDaySelector() {
+
+    document
+        .querySelectorAll(
+            ".day-button"
+        )
+        .forEach(
+            button => {
+
+                const day =
+                    Number(
+                        button.dataset.day
+                    );
+
+
+                if (
+                    day ===
+                    currentDay
+                ) {
+
+                    button.className =
+                        "day-button flex-shrink-0 px-4 py-3 rounded-2xl bg-green-500 text-white shadow-sm";
+
+                } else {
+
+                    button.className =
+                        "day-button flex-shrink-0 px-4 py-3 rounded-2xl bg-slate-100 text-slate-500";
+
+                }
+
+            }
+        );
+
+
+    const selected =
+        document.querySelector(
+            `[data-day="${currentDay}"]`
+        );
+
+
+    if (selected) {
+
+        selected.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "center"
+        });
+
+    }
+
+}
+
+
+/* =====================================================
+   GÜN YÜKLE
+===================================================== */
+
+async function loadDay(
+    day
+) {
+
+    updateHeader();
+
+
+    document.getElementById(
+        "foodContent"
+    ).innerHTML = `
+
+        <div class="text-center py-14 text-slate-400">
+
+            <div class="text-4xl mb-3">
+                🍽️
+            </div>
+
+            Yükleniyor...
+
+        </div>
+
+    `;
+
+
+    const ref =
+        doc(
+            db,
+            "gunler",
+            String(day)
+        );
+
+
+    const snap =
+        await getDoc(
+            ref
+        );
+
+
+    currentDayData =
+        snap.exists()
+            ? snap.data()
+            : {};
+
+
+    renderWater();
+    renderFood();
+
+    renderTasks();
+
+    renderNotes();
+
+}
+
+
+function updateHeader() {
+
+    const date =
+        getDateForDay(
+            currentDay
+        );
+
+
+    document.getElementById(
+        "headerTitle"
+    ).textContent =
+        `${currentDay}. Gün`;
+
+
+    document.getElementById(
+        "headerDate"
+    ).textContent =
+        formatDate(
+            date
+        );
+
+}
+
+
+/* =====================================================
+   GLOBAL
+===================================================== */
+
+async function loadGlobalData() {
+
+    const ref =
+        doc(
+            db,
+            "ayarlar",
+            "genel"
+        );
+
+
+    const snap =
+        await getDoc(
+            ref
+        );
+
+
+    globalData =
+        snap.exists()
+            ? snap.data()
+            : {};
+
+}
+
+
+/* =====================================================
+   YEMEK
+===================================================== */
+
+const MEALS = [
+
+    {
+        key: "guneBaslarken",
+        title: "Güne Başlarken",
+        icon: "🌅"
+    },
+
+    {
+        key: "kahvalti",
+        title: "Kahvaltı",
+        icon: "☕"
+    },
+
+    {
+        key: "ara1",
+        title: "Ara",
+        icon: "🍎"
+    },
+
+    {
+        key: "ogle",
+        title: "Öğle",
+        icon: "🍲"
+    },
+
+    {
+        key: "ara2",
+        title: "Ara",
+        icon: "🍎"
+    },
+
+    {
+        key: "ara3",
+        title: "Ara",
+        icon: "🍎"
+    },
+
+    {
+        key: "aksam",
+        title: "Akşam",
+        icon: "🌙"
+    },
+
+    {
+        key: "ara4",
+        title: "Ara",
+        icon: "🍎"
+    }
+
+];
+
+
+function renderFood() {
+
+    const container =
+        document.getElementById(
+            "foodContent"
+        );
+
+
+    let html = `
+
+        <div class="mb-6">
+
+            <h2 class="text-xl font-bold text-slate-800">
+                Bugünün Beslenme Planı
+            </h2>
+
+            <p class="text-sm text-slate-500 mt-1">
+                ${formatDate(
+                    getDateForDay(
+                        currentDay
+                    )
+                )}
+            </p>
+
+        </div>
+
+        <div class="space-y-4">
+
+    `;
+
+
+    let hasFood =
+        false;
+
+
+    MEALS.forEach(
+        (meal, index) => {
+
+            const value =
+                currentDayData[
+                    meal.key
+                ];
+
+
+            if (
+                !value
+            ) {
+
+                return;
+
+            }
+
+
+            hasFood =
+                true;
+
+
+            const key =
+                `meal_${index}`;
+
+
+            const states =
+                getCompletedStates();
+
+
+            const checked =
+                states[key] === true;
+
+
+            html += `
+
+                <label
+                    class="meal-card block bg-white rounded-3xl border border-slate-100 shadow-sm p-5 cursor-pointer">
+
+                    <div class="flex items-start gap-4">
+
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-xl flex-shrink-0">
+
+                            ${meal.icon}
+
+                        </div>
+
+
+                        <div class="flex-1 min-w-0">
+
+                            <div class="flex items-center justify-between gap-3">
+
+                                <h3 class="font-bold text-slate-800">
+                                    ${meal.title}
+                                </h3>
+
+
+                                <input
+                                    type="checkbox"
+                                    class="checkbox flex-shrink-0"
+                                    data-type="meal"
+                                    data-index="${index}"
+                                    ${checked ? "checked" : ""}
+                                >
+
+                            </div>
+
+
+                            <div
+                                class="mt-3 text-[16px] leading-7 ${
+                                    checked
+                                    ? "text-slate-400 line-through"
+                                    : "text-slate-600"
+                                }">
+
+                                ${formatMealContent(
+                                    value
+                                )}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </label>
+
+            `;
+
+        }
+    );
+
+
+    html +=
+        "</div>";
+
+
+    if (
+        !hasFood
+    ) {
+
+        html = `
+
+            <div class="bg-white rounded-3xl border border-slate-100 p-8 text-center">
+
+                <div class="text-4xl mb-3">
+                    🍽️
+                </div>
+
+                <p class="text-slate-500">
+                    Bu gün için henüz yemek planı eklenmemiş.
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+
+    container.innerHTML =
+        html;
+
+
+    attachCheckboxEvents();
+
+}
+
+
+/* =====================================================
+   YEMEK İÇERİĞİ
+===================================================== */
+
+function formatMealContent(
+    value
+) {
+
+    if (
+        Array.isArray(
+            value
+        )
+    ) {
+
+        return value
+            .map(
+                item =>
+                    `<div class="mb-1">• ${escapeHtml(item)}</div>`
+            )
+            .join("");
+
+    }
+
+
+    return String(
+        value
+    )
+        .split(
+            /\r?\n/
+        )
+        .map(
+            line => {
+
+                const text =
+                    line.trim();
+
+
+                if (
+                    !text
+                ) {
+
+                    return "<div class='h-2'></div>";
+
+                }
+
+
+                if (
+                    /^[-–—]\s*/.test(
+                        text
+                    )
+                ) {
+
+                    return `
+                        <div class="flex gap-2 mb-1">
+                            <span class="text-green-400 font-bold">−</span>
+                            <span>${escapeHtml(
+                                text.replace(
+                                    /^[-–—]\s*/,
+                                    ""
+                                )
+                            )}</span>
+                        </div>
+                    `;
+
+                }
+
+
+                return `
+                    <div class="mb-1">
+                        ${escapeHtml(text)}
+                    </div>
+                `;
+
+            }
+        )
+        .join("");
+
+}
+
+
+/* =====================================================
+   CHECKBOX
+===================================================== */
+
+function getCompletedStates() {
+
+    return currentDayData.durumlar ||
+        currentDayData.tamamlananlar ||
+        {};
+
+}
+
+
+function attachCheckboxEvents() {
+
+    document
+        .querySelectorAll(
+            ".checkbox"
+        )
+        .forEach(
+            checkbox => {
+
+                checkbox.addEventListener(
+                    "change",
+                    async () => {
+
+                        const type =
+                            checkbox.dataset.type;
+
+
+                        const index =
+                            Number(
+                                checkbox.dataset.index
+                            );
+
+
+                        const key =
+                            type === "meal"
+                                ? `meal_${index}`
+                                : `gorev_${index}`;
+
+
+                        const states = {
+
+                            ...getCompletedStates()
+
+                        };
+
+
+                        states[key] =
+                            checkbox.checked;
+
+
+                        currentDayData.durumlar =
+                            states;
+
+
+                        await setDoc(
+                            doc(
+                                db,
+                                "gunler",
+                                String(currentDay)
+                            ),
+                            {
+                                durumlar:
+                                    states
+                            },
+                            {
+                                merge: true
+                            }
+                        );
+
+
+                        if (
+                            type ===
+                            "meal"
+                        ) {
+
+                            renderFood();
+
+                        } else {
+
+                            renderTasks();
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+}
+
+
+/* =====================================================
+   GÖREVLER
+===================================================== */
+
+function renderTasks() {
+
+    const container =
+        document.getElementById(
+            "tasksContent"
+        );
+
+
+    const tasks =
+        normalizeArray(
+            globalData.gorevler ||
+            []
+        );
+
+
+    let html =
+        "";
+
+
+    if (
+        tasks.length
+    ) {
+
+        html += `
+            <div class="space-y-3">
+        `;
+
+
+        const states =
+            getCompletedStates();
+
+
+        tasks.forEach(
+            (task, index) => {
+
+                const key =
+                    `gorev_${index}`;
+
+
+                const checked =
+                    states[key] === true;
+
+
+                html += `
+
+                    <label
+                        class="flex items-center gap-4 bg-white rounded-3xl border border-slate-100 shadow-sm p-5 cursor-pointer">
+
+                        <input
+                            type="checkbox"
+                            class="checkbox"
+                            data-type="task"
+                            data-index="${index}"
+                            ${checked ? "checked" : ""}
+                        >
+
+                        <span
+                            class="flex-1 leading-7 ${
+                                checked
+                                ? "line-through text-slate-400"
+                                : ""
+                            }">
+
+                            ${escapeHtml(
+                                task
+                            )}
+
+                        </span>
+
+                    </label>
+
+                `;
+
+            }
+        );
+
+
+        html +=
+            "</div>";
+
+    } else {
+
+        html = `
+
+            <div class="bg-white rounded-3xl border p-8 text-center text-slate-500">
+
+                Henüz görev eklenmemiş.
+
+            </div>
+
+        `;
+
+    }
+
+
+    container.innerHTML =
+        html;
+
+
+    attachCheckboxEvents();
+
+    renderWater();
+
+}
+
+
+/* =====================================================
+   SU
+===================================================== */
+
+function renderWater() {
+    const container = document.getElementById("waterContent");
+    const states = getCompletedStates();
+    let completed = 0;
+    for (let i = 1; i <= 8; i++) if (states[`su_${i}`] === true) completed++;
+    const liters = completed * 0.5;
+    const percent = Math.min(100, (liters / 1.5) * 100);
+    let html = `<div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div><div class="flex items-center gap-2"><span class="text-xl">💧</span><h2 class="font-bold text-slate-800">Su Takibi</h2></div><p class="text-xs text-slate-400 mt-1">Her kutu 500 ml · En az 1,5 L hedef</p></div>
+            <div class="text-right"><div class="text-lg font-bold text-green-600">${liters.toFixed(1).replace(".",",")} L</div><div class="text-[11px] text-slate-400">${completed} × 500 ml</div></div>
+        </div>
+        <div class="h-2 bg-slate-100 rounded-full overflow-hidden mb-4"><div class="h-full bg-green-400 rounded-full transition-all" style="width:${percent}%"></div></div>
+        <div class="grid grid-cols-4 gap-2">`;
+    for (let i = 1; i <= 8; i++) {
+        const checked = states[`su_${i}`] === true;
+        html += `<label class="cursor-pointer"><input type="checkbox" class="water-checkbox hidden" data-water-key="su_${i}" ${checked ? "checked" : ""}><div class="water-option text-center py-3 rounded-2xl border ${checked ? "bg-green-100 border-green-400 text-green-700" : "bg-slate-50 border-slate-100 text-slate-500"}"><div class="text-base">${checked ? "✓" : "💧"}</div><div class="font-semibold text-xs mt-1">500 ml</div></div></label>`;
+    }
+    html += `</div>`;
+    if (liters >= 1.5) html += `<div class="mt-4 text-center text-sm font-semibold text-green-700 bg-green-50 rounded-2xl py-3">✓ Günlük 1,5 litre minimum hedef tamamlandı</div>`;
+    html += `</div>`;
+    container.innerHTML = html;
+    document.querySelectorAll(".water-checkbox").forEach(checkbox => checkbox.addEventListener("change", async () => {
+        const states = { ...getCompletedStates() }; states[checkbox.dataset.waterKey] = checkbox.checked; currentDayData.durumlar = states;
+        await setDoc(doc(db,"gunler",String(currentDay)),{durumlar:states},{merge:true}); renderWater();
+    }));
+}
+
+
+function updateWater() {
+
+    document
+        .querySelectorAll(
+            ".water-checkbox"
+        )
+        .forEach(
+            checkbox => {
+
+                const option =
+                    checkbox.parentElement
+                        .querySelector(
+                            ".water-option"
+                        );
+
+
+                if (
+                    checkbox.checked
+                ) {
+
+                    option.className =
+                        "water-option text-center py-4 rounded-2xl border bg-green-100 border-green-400 text-green-700";
+
+                } else {
+
+                    option.className =
+                        "water-option text-center py-4 rounded-2xl border bg-slate-50 border-slate-100 text-slate-500";
+
+                }
+
+            }
+        );
+
+}
+
+
+/* =====================================================
+   NOTLAR
+===================================================== */
+
+function renderNotes() {
+
+    const container =
+        document.getElementById(
+            "notesContent"
+        );
+
+
+    const notes =
+        normalizeNotes(
+            globalData.onemliNotlar ||
+            globalData.önemliNotlar ||
+            []
+        );
+
+
+    if (
+        !notes.length
+    ) {
+
+        container.innerHTML = `
+
+            <div class="bg-white rounded-3xl border p-8 text-center text-slate-500">
+
+                📌
+
+                <div class="mt-3">
+                    Henüz önemli not eklenmemiş.
+                </div>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    let html =
+        `<div class="space-y-3">`;
+
+
+    notes.forEach(
+        (note, index) => {
+
+            html += `
+
+                <div
+                    class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+
+                    <button
+                        type="button"
+                        class="note-toggle w-full flex items-center gap-4 p-5 text-left"
+                        data-note-index="${index}">
+
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-xl">
+
+                            📌
+
+                        </div>
+
+
+                        <div class="flex-1">
+
+                            <h3 class="font-bold text-slate-800">
+
+                                ${escapeHtml(
+                                    note.title
+                                )}
+
+                            </h3>
+
+                            <p class="text-xs text-slate-400 mt-1">
+                                Detayları görmek için dokunun
+                            </p>
+
+                        </div>
+
+
+                        <span
+                            class="note-arrow w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center">
+
+                            ↓
+
+                        </span>
+
+                    </button>
+
+
+                    <div
+                        class="note-accordion-content"
+                        data-note-content="${index}">
+
+                        <div
+                            class="border-t px-5 py-6 note-content">
+
+                            ${formatNoteContent(
+                                note.content
+                            )}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    html +=
+        "</div>";
+
+
+    container.innerHTML =
+        html;
+
+
+    attachNoteEvents();
+
+}
+
+
+/* =====================================================
+   NOTE NORMALIZE
+===================================================== */
+
+function normalizeNotes(
+    notes
+) {
+
+    if (
+        !Array.isArray(
+            notes
+        )
+    ) {
+
+        return [];
+
+    }
+
+
+    return notes
+        .map(
+            note => {
+
+                if (
+                    typeof note ===
+                    "string"
+                ) {
+
+                    return {
+
+                        title:
+                            "Önemli Not",
+
+                        content:
+                            note
+
+                    };
+
+                }
+
+
+                if (
+                    note &&
+                    typeof note ===
+                    "object"
+                ) {
+
+                    return {
+
+                        title:
+                            note.title ||
+                            note.baslik ||
+                            note.başlık ||
+                            "Önemli Not",
+
+                        content:
+                            note.content ||
+                            note.icerik ||
+                            note.içerik ||
+                            ""
+
+                    };
+
+                }
+
+
+                return null;
+
+            }
+        )
+        .filter(
+            note =>
+                note &&
+                note.content
+        );
+
+}
+
+
+/* =====================================================
+   NOTE FORMAT
+===================================================== */
+
+function formatNoteContent(
+    content
+) {
+
+    if (
+        typeof content !==
+        "string"
+    ) {
+
+        content =
+            String(
+                content || ""
+            );
+
+    }
+
+
+    return content
+        .split(
+            /\r?\n/
+        )
+        .map(
+            line => {
+
+                const text =
+                    line.trim();
+
+
+                if (
+                    !text
+                ) {
+
+                    return `
+                        <div class="h-2"></div>
+                    `;
+
+                }
+
+
+                if (
+                    /^[-–—]\s*/.test(
+                        text
+                    )
+                ) {
+
+                    return `
+
+                        <div class="note-bullet">
+
+                            <span class="note-bullet-mark">
+                                −
+                            </span>
+
+                            <span>
+                                ${escapeHtml(
+                                    text.replace(
+                                        /^[-–—]\s*/,
+                                        ""
+                                    )
+                                )}
+                            </span>
+
+                        </div>
+
+                    `;
+
+                }
+
+
+                return `
+
+                    <p>
+                        ${escapeHtml(
+                            text
+                        )}
+                    </p>
+
+                `;
+
+            }
+        )
+        .join("");
+
+}
+
+
+/* =====================================================
+   NOTE EVENTS
+===================================================== */
+
+function attachNoteEvents() {
+
+    document
+        .querySelectorAll(
+            ".note-toggle"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        const index =
+                            button.dataset.noteIndex;
+
+
+                        const content =
+                            document.querySelector(
+                                `[data-note-content="${index}"]`
+                            );
+
+
+                        const arrow =
+                            button.querySelector(
+                                ".note-arrow"
+                            );
+
+
+                        if (
+                            content.classList.contains(
+                                "open"
+                            )
+                        ) {
+
+                            content.style.maxHeight =
+                                "0px";
+
+                            content.classList.remove(
+                                "open"
+                            );
+
+                            arrow.style.transform =
+                                "rotate(0deg)";
+
+                        } else {
+
+                            content.classList.add(
+                                "open"
+                            );
+
+                            content.style.maxHeight =
+                                content.scrollHeight +
+                                "px";
+
+                            arrow.style.transform =
+                                "rotate(180deg)";
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+}
+
+
+/* =====================================================
+   TAB
+===================================================== */
+
+function switchTab(
+    tab
+) {
+
+    currentTab =
+        tab;
+
+
+    document
+        .getElementById(
+            "foodSection"
+        )
+        .classList.toggle(
+            "hidden",
+            tab !== "food"
+        );
+
+    document
+        .getElementById(
+            "waterSection"
+        )
+        .classList.toggle(
+            "hidden",
+            tab !== "food"
+        );
+
+
+    document
+        .getElementById(
+            "tasksSection"
+        )
+        .classList.toggle(
+            "hidden",
+            tab !== "tasks"
+        );
+
+
+    document
+        .getElementById(
+            "notesSection"
+        )
+        .classList.toggle(
+            "hidden",
+            tab !== "notes"
+        );
+
+
+    const buttons = {
+
+        food:
+            document.getElementById(
+                "navFood"
+            ),
+
+        tasks:
+            document.getElementById(
+                "navTasks"
+            ),
+
+        notes:
+            document.getElementById(
+                "navNotes"
+            )
+
+    };
+
+
+    Object
+        .values(
+            buttons
+        )
+        .forEach(
+            button => {
+
+                button.classList.remove(
+                    "text-green-600"
+                );
+
+                button.classList.add(
+                    "text-slate-400"
+                );
+
+            }
+        );
+
+
+    buttons[tab]
+        .classList.remove(
+            "text-slate-400"
+        );
+
+    buttons[tab]
+        .classList.add(
+        "text-green-600"
+    );
+
+}
+
+
+document
+    .getElementById(
+        "navFood"
+    )
+    .addEventListener(
+        "click",
+        () => switchTab("food")
+    );
+
+
+document
+    .getElementById(
+        "navTasks"
+    )
+    .addEventListener(
+        "click",
+        () => switchTab("tasks")
+    );
+
+
+document
+    .getElementById(
+        "navNotes"
+    )
+    .addEventListener(
+        "click",
+        () => switchTab("notes")
+    );
+
+
+/* =====================================================
+   UTILS
+===================================================== */
+
+function normalizeArray(
+    value
+) {
+
+    if (
+        Array.isArray(
+            value
+        )
+    ) {
+
+        return value
+            .map(
+                item => {
+
+                    if (
+                        typeof item ===
+                        "string"
+                    ) {
+
+                        return item;
+
+                    }
+
+
+                    if (
+                        item &&
+                        typeof item ===
+                        "object"
+                    ) {
+
+                        return (
+                            item.text ||
+                            item.content ||
+                            item.icerik ||
+                            ""
+                        );
+
+                    }
+
+
+                    return "";
+
+                }
+            )
+            .filter(Boolean);
+
+    }
+
+
+    if (
+        typeof value ===
+        "string"
+    ) {
+
+        return value
+            .split(
+                /\r?\n/
+            )
+            .map(
+                x => x.trim()
+            )
+            .filter(Boolean);
+
+    }
+
+
+    return [];
+
+}
+
+
+function escapeHtml(
+    text
+) {
+
+    return String(
+        text || ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+</script>
+
+</body>
+</html>
