@@ -13,6 +13,12 @@
     name="theme-color"
     content="#f0fdf4">
 
+<link rel="manifest" href="./manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Beslenme Takibi">
+
 <title>Beslenme Takibi</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
@@ -2189,6 +2195,18 @@ function escapeHtml(
             "&#039;"
         );
 
+}
+
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js")
+            .then(registration => {
+                console.log("PWA Service Worker aktif:", registration.scope);
+            })
+            .catch(error => {
+                console.error("PWA Service Worker kayıt hatası:", error);
+            });
+    });
 }
 
 </script>
