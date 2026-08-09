@@ -642,6 +642,8 @@ onAuthStateChanged(
             currentDay
         );
 
+        renderMedications();
+
         switchTab(
             "food"
         );
@@ -1064,25 +1066,71 @@ async function loadGlobalData() {
 
 async function loadMedications() {
 
-    const ref =
-        doc(
-            db,
-            "ayarlar",
-            "ilaclar"
+    try {
+
+        const snap =
+            await getDoc(
+                doc(
+                    db,
+                    "ayarlar",
+                    "ilaclar"
+                )
+            );
+
+        if (!snap.exists()) {
+            medications = [];
+            console.log(
+                "Firestore'da ayarlar/ilaclar bulunamadı."
+            );
+            return;
+        }
+
+        const data =
+            snap.data();
+
+        medications =
+            Array.isArray(
+                data.ilaclar
+            )
+                ? data.ilaclar
+                : [];
+
+        console.log(
+            "Okunan ilaçlar:",
+            medications
         );
 
-    const snap =
-        await getDoc(
-            ref
+    } catch (error) {
+
+        console.error(
+            "İlaçlar okunamadı:",
+            error
         );
 
-    medications =
-        snap.exists() &&
-        Array.isArray(
-            snap.data().ilaclar
-        )
-            ? snap.data().ilaclar
-            : [];
+        medications = [];
+
+        const container =
+            document.getElementById(
+                "medsContent"
+            );
+
+        if (container) {
+            container.innerHTML = `
+                <div class="bg-white rounded-3xl border border-red-100 shadow-sm p-6 text-center">
+                    <div class="text-3xl mb-3">⚠️</div>
+                    <p class="font-semibold text-red-700">
+                        İlaç bilgileri alınamadı.
+                    </p>
+                    <p class="text-xs text-slate-500 mt-2">
+                        ${escapeHtml(
+                            error?.message ||
+                            "Firestore erişim hatası"
+                        )}
+                    </p>
+                </div>
+            `;
+        }
+    }
 }
 
 
@@ -2304,6 +2352,12 @@ function attachNoteEvents() {
 function switchTab(
     tab
 ) {
+
+    if (tab === "meds") {
+        renderMedications();
+    }
+
+
 
     currentTab =
         tab;
