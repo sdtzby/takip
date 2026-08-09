@@ -153,6 +153,12 @@ body {
         transform .25s ease;
 }
 
+/* İLAÇ */
+.med-time-row {
+    border-left: 3px solid #c4b5fd;
+}
+
+
 </style>
 
 </head>
@@ -325,6 +331,28 @@ body {
 
 
 <!-- =====================================================
+     İLAÇLAR
+===================================================== -->
+<section
+    id="medsSection"
+    class="hidden">
+
+    <div class="mb-5">
+        <h2 class="text-xl font-bold">
+            💊 İlaç Takibi
+        </h2>
+
+        <p class="text-sm text-slate-500 mt-1">
+            Bugün kullanmanız gereken ilaçları işaretleyin.
+        </p>
+    </div>
+
+    <div id="medsContent"></div>
+
+</section>
+
+
+<!-- =====================================================
      GÖREVLER
 ===================================================== -->
 
@@ -378,7 +406,7 @@ body {
     class="hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t z-50 bottom-nav">
 
     <div
-        class="max-w-3xl mx-auto grid grid-cols-3 h-20">
+        class="max-w-3xl mx-auto grid grid-cols-4 h-20">
 
 
         <button
@@ -391,6 +419,21 @@ body {
 
             <span class="text-xs font-semibold">
                 Yemek
+            </span>
+
+        </button>
+
+
+        <button
+            id="navMeds"
+            class="flex flex-col justify-center items-center text-slate-400">
+
+            <span class="text-xl">
+                💊
+            </span>
+
+            <span class="text-xs font-semibold">
+                İlaç
             </span>
 
         </button>
@@ -514,6 +557,8 @@ let currentDayData = {};
 
 let globalData = {};
 
+let medications = [];
+
 
 /* =====================================================
    ELEMENTLER
@@ -590,6 +635,8 @@ onAuthStateChanged(
         updateDaySelector();
 
         await loadGlobalData();
+
+        await loadMedications();
 
         await loadDay(
             currentDay
@@ -1008,6 +1055,34 @@ async function loadGlobalData() {
             : {};
 
 }
+
+/* =====================================================
+   İLAÇLAR
+===================================================== */
+
+async function loadMedications() {
+
+    const ref =
+        doc(
+            db,
+            "ayarlar",
+            "ilaclar"
+        );
+
+    const snap =
+        await getDoc(
+            ref
+        );
+
+    medications =
+        snap.exists() &&
+        Array.isArray(
+            snap.data().ilaclar
+        )
+            ? snap.data().ilaclar
+            : [];
+}
+
 
 
 /* =====================================================
@@ -1590,6 +1665,267 @@ function updateWater() {
    NOTLAR
 ===================================================== */
 
+function getActiveMedicationsForDay() {
+
+    return medications.filter(
+        medication => {
+
+            const startDay =
+                Number(
+                    medication.startDay ||
+                    DIET_START_DAY
+                );
+
+            const duration =
+                Number(
+                    medication.durationDays ||
+                    0
+                );
+
+            return (
+                currentDay >= startDay &&
+                currentDay < startDay + duration
+            );
+        }
+    );
+}
+
+
+function renderMedications() {
+
+    const container =
+        document.getElementById(
+            "medsContent"
+        );
+
+    const active =
+        getActiveMedicationsForDay();
+
+    const states =
+        getCompletedStates();
+
+    if (!active.length) {
+
+        container.innerHTML = `
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 text-center">
+                <div class="text-4xl mb-3">
+                    💊
+                </div>
+
+                <p class="text-slate-500">
+                    Bugün için kullanılacak ilaç bulunmuyor.
+                </p>
+            </div>
+        `;
+
+        return;
+    }
+
+    let html =
+        `<div class="space-y-4">`;
+
+    active.forEach(
+        medication => {
+
+            const times =
+                Array.isArray(
+                    medication.times
+                )
+                    ? medication.times
+                    : [];
+
+            const startDay =
+                Number(
+                    medication.startDay ||
+                    DIET_START_DAY
+                );
+
+            const usedDay =
+                currentDay -
+                startDay +
+                1;
+
+            const remaining =
+                Number(
+                    medication.durationDays ||
+                    0
+                ) -
+                usedDay;
+
+            html += `
+                <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+
+                    <div class="flex items-start gap-4">
+
+                        <div class="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center text-xl flex-shrink-0">
+                            💊
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+
+                            <h3 class="font-bold text-slate-800 text-lg">
+                                ${escapeHtml(
+                                    medication.name
+                                )}
+                            </h3>
+
+                            ${
+                                medication.dose
+                                    ? `
+                                        <p class="text-sm text-slate-500 mt-1">
+                                            ${escapeHtml(
+                                                medication.dose
+                                            )}
+                                        </p>
+                                    `
+                                    : ""
+                            }
+
+                            ${
+                                medication.note
+                                    ? `
+                                        <p class="text-sm text-slate-500 mt-1">
+                                            ${escapeHtml(
+                                                medication.note
+                                            )}
+                                        </p>
+                                    `
+                                    : ""
+                            }
+
+                            <p class="text-xs text-violet-500 mt-2">
+                                Tedavinin ${usedDay}. günü
+                                ${
+                                    remaining > 0
+                                        ? `• ${remaining} gün kaldı`
+                                        : ""
+                                }
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mt-4 space-y-2">
+
+                        ${
+                            times.length
+                                ? times.map(
+                                    (time, index) => {
+
+                                        const key =
+                                            `ilac_${medication.id}_${index}`;
+
+                                        const checked =
+                                            states[key] === true;
+
+                                        return `
+                                            <label
+                                                class="med-time-row flex items-center gap-4 bg-violet-50/60 rounded-2xl p-4 cursor-pointer">
+
+                                                <input
+                                                    type="checkbox"
+                                                    class="checkbox"
+                                                    data-type="med"
+                                                    data-med-id="${escapeHtml(
+                                                        medication.id
+                                                    )}"
+                                                    data-time-index="${index}"
+                                                    ${
+                                                        checked
+                                                            ? "checked"
+                                                            : ""
+                                                    }>
+
+                                                <span class="flex-1">
+
+                                                    <strong class="text-slate-700">
+                                                        ${escapeHtml(
+                                                            time
+                                                        )}
+                                                    </strong>
+
+                                                    <span class="block text-xs text-slate-500 mt-1">
+                                                        ${
+                                                            checked
+                                                                ? "İlaç alındı ✓"
+                                                                : "Henüz işaretlenmedi"
+                                                        }
+                                                    </span>
+
+                                                </span>
+
+                                            </label>
+                                        `;
+                                    }
+                                ).join("")
+                                : `
+                                    <div class="text-sm text-slate-500 bg-slate-50 rounded-2xl p-4">
+                                        Kullanım saati belirtilmemiş.
+                                    </div>
+                                `
+                        }
+
+                    </div>
+
+                </div>
+            `;
+        }
+    );
+
+    html +=
+        "</div>";
+
+    container.innerHTML =
+        html;
+
+    document
+        .querySelectorAll(
+            '[data-type="med"]'
+        )
+        .forEach(
+            checkbox => {
+
+                checkbox.addEventListener(
+                    "change",
+                    async () => {
+
+                        const key =
+                            `ilac_${checkbox.dataset.medId}_${checkbox.dataset.timeIndex}`;
+
+                        const states = {
+                            ...getCompletedStates()
+                        };
+
+                        states[key] =
+                            checkbox.checked;
+
+                        currentDayData.durumlar =
+                            states;
+
+                        await setDoc(
+                            doc(
+                                db,
+                                "gunler",
+                                String(currentDay)
+                            ),
+                            {
+                                durumlar:
+                                    states
+                            },
+                            {
+                                merge: true
+                            }
+                        );
+
+                        renderMedications();
+                    }
+                );
+            }
+        );
+}
+
+
 function renderNotes() {
 
     const container =
@@ -1999,6 +2335,15 @@ function switchTab(
             tab !== "tasks"
         );
 
+    document
+        .getElementById(
+            "medsSection"
+        )
+        .classList.toggle(
+            "hidden",
+            tab !== "meds"
+        );
+
 
     document
         .getElementById(
@@ -2020,6 +2365,11 @@ function switchTab(
         tasks:
             document.getElementById(
                 "navTasks"
+            ),
+
+        meds:
+            document.getElementById(
+                "navMeds"
             ),
 
         notes:
@@ -2079,6 +2429,15 @@ document
     .addEventListener(
         "click",
         () => switchTab("tasks")
+    );
+
+document
+    .getElementById(
+        "navMeds"
+    )
+    .addEventListener(
+        "click",
+        () => switchTab("meds")
     );
 
 
