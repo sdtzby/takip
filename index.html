@@ -1000,6 +1000,8 @@ async function loadDay(
 
     renderTasks();
 
+    renderMedications();
+
     renderNotes();
 
 }
@@ -2343,6 +2345,10 @@ function switchTab(
             "hidden",
             tab !== "meds"
         );
+
+    if (tab === "meds") {
+        renderMedications();
+    }
 
 
     document
