@@ -1549,16 +1549,36 @@ document
                     ),
                     {
                         ilaclar:
-                            medicationsToSave
-                    },
-                    {
-                        merge:
-                            true
+                            medicationsToSave,
+                        updatedAt:
+                            new Date().toISOString()
                     }
                 );
 
+                const verifySnap =
+                    await getDoc(
+                        doc(
+                            db,
+                            "ayarlar",
+                            "ilaclar"
+                        )
+                    );
+
+                if (
+                    !verifySnap.exists() ||
+                    !Array.isArray(
+                        verifySnap.data().ilaclar
+                    )
+                ) {
+                    throw new Error(
+                        "Firestore kaydı doğrulanamadı."
+                    );
+                }
+
                 medications =
-                    medicationsToSave;
+                    verifySnap.data().ilaclar;
+
+                renderMedicationsAdmin();
 
                 button.textContent =
                     "✓ İlaçlar Kaydedildi";
@@ -1597,7 +1617,8 @@ document
                     "💊 İlaçları Kaydet";
 
                 showMessage(
-                    "İlaçlar kaydedilemedi.",
+                    "İlaçlar kaydedilemedi: " +
+                    (error?.message || error),
                     false
                 );
             }
