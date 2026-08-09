@@ -17,6 +17,13 @@
             min-height: 90px;
             resize: vertical;
         }
+
+        .med-time-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
     </style>
 </head>
 
@@ -317,6 +324,35 @@
         </div>
 
 
+        <!-- İLAÇ TEDAVİSİ -->
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 mt-6">
+
+            <h2 class="text-xl font-bold text-slate-800">
+                💊 İlaç Tedavisi
+            </h2>
+
+            <p class="text-sm text-slate-500 mt-1 mb-5">
+                İlaçlar tek sefer girilir. Başlangıç günü ve kullanım süresine göre
+                kullanıcı ekranında otomatik gösterilir.
+            </p>
+
+            <div id="medicationsContainer" class="space-y-4"></div>
+
+            <button
+                id="addMedicationBtn"
+                class="w-full mt-4 py-4 rounded-2xl bg-violet-100 text-violet-700 font-semibold">
+                + İlaç Ekle
+            </button>
+
+            <button
+                id="saveMedicationsBtn"
+                class="w-full mt-3 py-4 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-semibold">
+                💊 İlaçları Kaydet
+            </button>
+
+        </div>
+
+
         <!-- ÖNEMLİ NOTLAR -->
 
         <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 mt-6">
@@ -434,6 +470,8 @@ const DIET_START_DATE =
         9
     );
 
+let medications = [];
+
 
 /* =====================================================
    ELEMENTLER
@@ -516,6 +554,8 @@ onAuthStateChanged(
         createDayList();
 
         await loadGlobalSettings();
+
+        await loadMedications();
 
         const currentDay =
             calculateCurrentDay();
@@ -1109,6 +1149,458 @@ document
 
             }
 
+        }
+    );
+
+
+/* =====================================================
+   İLAÇ TEDAVİSİ
+===================================================== */
+
+async function loadMedications() {
+
+    const snap =
+        await getDoc(
+            doc(
+                db,
+                "ayarlar",
+                "ilaclar"
+            )
+        );
+
+    medications =
+        snap.exists() &&
+        Array.isArray(
+            snap.data().ilaclar
+        )
+            ? snap.data().ilaclar
+            : [];
+
+    renderMedicationsAdmin();
+}
+
+
+function renderMedicationsAdmin() {
+
+    const container =
+        document.getElementById(
+            "medicationsContainer"
+        );
+
+    container.innerHTML =
+        "";
+
+    medications.forEach(
+        medication => {
+
+            addMedicationField(
+                medication
+            );
+        }
+    );
+}
+
+
+function addMedicationField(
+    medication = {}
+) {
+
+    const container =
+        document.getElementById(
+            "medicationsContainer"
+        );
+
+    const id =
+        medication.id ||
+        (
+            crypto.randomUUID
+                ? crypto.randomUUID()
+                : `ilac_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .slice(2)}`
+        );
+
+    const wrapper =
+        document.createElement(
+            "div"
+        );
+
+    wrapper.className =
+        "med-editor bg-violet-50/60 rounded-2xl p-4 border border-violet-100";
+
+    wrapper.dataset.id =
+        id;
+
+    const times =
+        Array.isArray(
+            medication.times
+        ) &&
+        medication.times.length
+            ? medication.times
+            : [
+                "08:00"
+            ];
+
+    wrapper.innerHTML = `
+        <div class="flex gap-2 mb-3">
+
+            <input
+                type="text"
+                class="med-name flex-1 px-4 py-3 rounded-xl border border-slate-200"
+                placeholder="İlaç adı"
+                value="${escapeHtmlAttribute(
+                    medication.name || ""
+                )}">
+
+            <button
+                type="button"
+                class="remove-med px-4 rounded-xl bg-red-100 text-red-600">
+                Sil
+            </button>
+
+        </div>
+
+
+        <div class="grid md:grid-cols-3 gap-3">
+
+            <input
+                type="text"
+                class="med-dose px-4 py-3 rounded-xl border border-slate-200"
+                placeholder="Doz (örn. 1 tablet)"
+                value="${escapeHtmlAttribute(
+                    medication.dose || ""
+                )}">
+
+            <input
+                type="number"
+                min="3"
+                max="30"
+                class="med-start px-4 py-3 rounded-xl border border-slate-200"
+                placeholder="Başlangıç günü"
+                value="${medication.startDay || 3}">
+
+            <input
+                type="number"
+                min="1"
+                max="365"
+                class="med-duration px-4 py-3 rounded-xl border border-slate-200"
+                placeholder="Kaç gün?"
+                value="${medication.durationDays || 1}">
+
+        </div>
+
+
+        <input
+            type="text"
+            class="med-note mt-3 w-full px-4 py-3 rounded-xl border border-slate-200"
+            placeholder="Not (örn. Aç karnına)"
+            value="${escapeHtmlAttribute(
+                medication.note || ""
+            )}">
+
+
+        <div class="mt-4">
+
+            <div class="flex items-center justify-between mb-2">
+
+                <strong class="text-sm text-slate-700">
+                    Kullanım saatleri
+                </strong>
+
+                <button
+                    type="button"
+                    class="add-time text-sm px-3 py-2 rounded-xl bg-white text-violet-700 border">
+                    + Saat
+                </button>
+
+            </div>
+
+            <div class="times space-y-2">
+
+                ${times
+                    .map(
+                        time =>
+                            medicationTimeRow(
+                                time
+                            )
+                    )
+                    .join("")
+                }
+
+            </div>
+
+        </div>
+    `;
+
+    wrapper
+        .querySelector(
+            ".remove-med"
+        )
+        .addEventListener(
+            "click",
+            () => {
+                wrapper.remove();
+            }
+        );
+
+    wrapper
+        .querySelector(
+            ".add-time"
+        )
+        .addEventListener(
+            "click",
+            () => {
+
+                wrapper
+                    .querySelector(
+                        ".times"
+                    )
+                    .insertAdjacentHTML(
+                        "beforeend",
+                        medicationTimeRow(
+                            "12:00"
+                        )
+                    );
+            }
+        );
+
+    container.appendChild(
+        wrapper
+    );
+}
+
+
+function medicationTimeRow(
+    time
+) {
+
+    return `
+        <div class="med-time-row">
+
+            <input
+                type="time"
+                class="med-time-input flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white"
+                value="${escapeHtmlAttribute(
+                    time
+                )}">
+
+            <button
+                type="button"
+                class="remove-time px-3 py-3 rounded-xl bg-slate-100 text-slate-500">
+                ×
+            </button>
+
+        </div>
+    `;
+}
+
+
+document
+    .getElementById(
+        "addMedicationBtn"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            addMedicationField();
+        }
+    );
+
+
+document
+    .getElementById(
+        "medicationsContainer"
+    )
+    .addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target.classList.contains(
+                    "remove-time"
+                )
+            ) {
+
+                event.target
+                    .parentElement
+                    .remove();
+            }
+        }
+    );
+
+
+document
+    .getElementById(
+        "saveMedicationsBtn"
+    )
+    .addEventListener(
+        "click",
+        async () => {
+
+            const medicationsToSave =
+                [];
+
+            document
+                .querySelectorAll(
+                    ".med-editor"
+                )
+                .forEach(
+                    editor => {
+
+                        const name =
+                            editor
+                                .querySelector(
+                                    ".med-name"
+                                )
+                                .value
+                                .trim();
+
+                        if (
+                            !name
+                        ) {
+                            return;
+                        }
+
+                        const times =
+                            [
+                                ...editor
+                                    .querySelectorAll(
+                                        ".med-time-input"
+                                    )
+                            ]
+                                .map(
+                                    input =>
+                                        input.value
+                                )
+                                .filter(
+                                    Boolean
+                                );
+
+                        medicationsToSave.push(
+                            {
+                                id:
+                                    editor.dataset.id,
+
+                                name:
+                                    name,
+
+                                dose:
+                                    editor
+                                        .querySelector(
+                                            ".med-dose"
+                                        )
+                                        .value
+                                        .trim(),
+
+                                startDay:
+                                    Number(
+                                        editor
+                                            .querySelector(
+                                                ".med-start"
+                                            )
+                                            .value
+                                    ) ||
+                                    3,
+
+                                durationDays:
+                                    Number(
+                                        editor
+                                            .querySelector(
+                                                ".med-duration"
+                                            )
+                                            .value
+                                    ) ||
+                                    1,
+
+                                note:
+                                    editor
+                                        .querySelector(
+                                            ".med-note"
+                                        )
+                                        .value
+                                        .trim(),
+
+                                times:
+                                    times
+                            }
+                        );
+                    }
+                );
+
+            const button =
+                document.getElementById(
+                    "saveMedicationsBtn"
+                );
+
+            button.disabled =
+                true;
+
+            button.textContent =
+                "Kaydediliyor...";
+
+            try {
+
+                await setDoc(
+                    doc(
+                        db,
+                        "ayarlar",
+                        "ilaclar"
+                    ),
+                    {
+                        ilaclar:
+                            medicationsToSave
+                    },
+                    {
+                        merge:
+                            true
+                    }
+                );
+
+                medications =
+                    medicationsToSave;
+
+                button.textContent =
+                    "✓ İlaçlar Kaydedildi";
+
+                button.className =
+                    "w-full mt-3 py-4 rounded-2xl bg-green-500 text-white font-semibold";
+
+                setTimeout(
+                    () => {
+
+                        button.disabled =
+                            false;
+
+                        button.textContent =
+                            "💊 İlaçları Kaydet";
+
+                        button.className =
+                            "w-full mt-3 py-4 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-semibold";
+
+                    },
+                    1800
+                );
+
+            } catch (
+                error
+            ) {
+
+                console.error(
+                    error
+                );
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "💊 İlaçları Kaydet";
+
+                showMessage(
+                    "İlaçlar kaydedilemedi.",
+                    false
+                );
+            }
         }
     );
 
