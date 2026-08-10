@@ -153,12 +153,12 @@ body {
         transform .25s ease;
 }
 
-/* GÜNÜN SÖZÜ */
-.quote-heart{border:0;cursor:pointer;animation:heartbeat 1.35s ease-in-out infinite;box-shadow:0 6px 18px rgba(244,114,182,.12)}
-.quote-heart:active{transform:scale(.92)}
-@keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.08)}28%{transform:scale(1)}42%{transform:scale(1.08)}56%{transform:scale(1)}}
-.quote-modal{opacity:0;pointer-events:none;transition:opacity .2s ease}.quote-modal.open{opacity:1;pointer-events:auto}
-.quote-card{transform:translateY(12px) scale(.97);transition:transform .25s ease}.quote-modal.open .quote-card{transform:translateY(0) scale(1)}
+.quote-heart{width:46px;height:46px;border-radius:18px;background:#fff1f2;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;border:1px solid #ffe4e6;animation:heartBeat 1.7s ease-in-out infinite;box-shadow:0 6px 18px rgba(244,63,94,.10)}
+.quote-heart.empty{opacity:.55;animation:none}
+@keyframes heartBeat{0%,100%{transform:scale(1)}12%{transform:scale(1.08)}24%{transform:scale(1)}36%{transform:scale(1.05)}48%{transform:scale(1)}}
+.quote-modal-backdrop{background:rgba(15,23,42,.38);backdrop-filter:blur(5px)}
+.quote-card{animation:quotePop .22s ease-out}
+@keyframes quotePop{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
 
 /* İLAÇ */
 .med-time-row {
@@ -278,14 +278,7 @@ body {
             </div>
 
 
-            <button
-                id="dailyQuoteButton"
-                type="button"
-                aria-label="Bugünün sözü"
-                class="quote-heart w-11 h-11 rounded-2xl bg-pink-50 flex items-center justify-center text-2xl"
-                title="Bugünün sözü">
-                ❤️
-            </button>
+            <button id="dailyQuoteButton" type="button" class="quote-heart" aria-label="Bugünün sözü">❤️</button>
 
         </div>
 
@@ -295,18 +288,16 @@ body {
 
 
 
-<!-- GÜNÜN SÖZÜ -->
-<div id="quoteModal" class="quote-modal fixed inset-0 z-[80] flex items-center justify-center p-5 bg-slate-900/35 backdrop-blur-sm">
-  <div class="quote-card w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden">
-    <div class="p-7 text-center">
-      <div class="text-4xl mb-4">❤️</div>
-      <div class="text-xs font-bold tracking-widest text-pink-400 uppercase">Bugünün Sözü</div>
-      <div id="quoteDay" class="text-sm text-slate-400 mt-1"></div>
-      <div id="quoteText" class="mt-6 text-lg sm:text-xl leading-8 font-medium text-slate-700"></div>
-      <div class="mt-6 text-sm text-pink-400">Seni seven biri ❤️</div>
-      <button id="closeQuoteButton" type="button" class="mt-7 w-full py-4 rounded-2xl bg-green-50 text-green-700 font-bold">Devam Edelim 💚</button>
+<!-- GÜNÜN SÖZÜ MODALI -->
+<div id="quoteModal" class="hidden fixed inset-0 z-[70] quote-modal-backdrop items-center justify-center px-5">
+    <div class="quote-card w-full max-w-md bg-white rounded-[2rem] shadow-2xl p-7 relative">
+        <button id="closeQuoteModal" type="button" class="absolute right-5 top-5 w-10 h-10 rounded-2xl bg-slate-100 text-slate-500 text-xl">×</button>
+        <div id="quoteModalIcon" class="w-16 h-16 mx-auto rounded-3xl bg-pink-50 flex items-center justify-center text-3xl mb-5">❤️</div>
+        <div class="text-center text-xs font-bold uppercase tracking-wider text-pink-400">Bugünün Sözü</div>
+        <h2 id="quoteModalDay" class="text-center text-xl font-bold text-slate-800 mt-2"></h2>
+        <div id="quoteModalBody" class="mt-6 text-center text-lg leading-8 text-slate-600"></div>
+        <button id="quoteModalCloseButton" type="button" class="w-full mt-7 py-4 rounded-2xl bg-pink-500 text-white font-bold">Tamam ❤️</button>
     </div>
-  </div>
 </div>
 
 <!-- GÜN SEÇİMİ -->
@@ -579,6 +570,7 @@ let currentTab = "food";
 let currentDayData = {};
 
 let globalData = {};
+let dailyQuotes = {};
 
 let medications = [];
 
@@ -900,7 +892,7 @@ function createDaySelector() {
 
 
                 updateDaySelector();
-
+                updateQuoteHeart();
 
                 await loadDay(
                     day
@@ -1081,60 +1073,62 @@ async function loadGlobalData() {
             ? snap.data()
             : {};
 
+    await loadDailyQuotes();
+
 }
 
 /* =====================================================
    GÜNÜN SÖZÜ
 ===================================================== */
-function getTodayQuote(){
-    const quotes = globalData.gunlukSozler || {};
-    const value = quotes[String(currentDay)];
-    if(typeof value === "string") return value.trim();
-    if(value && typeof value === "object") return String(value.text || value.content || value.icerik || "").trim();
+async function loadDailyQuotes() {
+    try {
+        const snap = await getDoc(doc(db, "ayarlar", "gunlukSozler"));
+        dailyQuotes = snap.exists() ? (snap.data().quotes || {}) : {};
+    } catch (error) {
+        console.error("Günün sözleri okunamadı:", error);
+        dailyQuotes = {};
+    }
+    updateQuoteHeart();
+}
+function getQuoteForDay(day) {
+    const value = dailyQuotes[String(day)];
+    if (typeof value === "string") return value.trim();
+    if (value && typeof value === "object") return String(value.text || value.content || value.icerik || "").trim();
     return "";
 }
-function getUnlockedDay(){
-    const today = new Date();
-    today.setHours(0,0,0,0);
-
-    const start = getDateForDay(DIET_START_DAY);
-    start.setHours(0,0,0,0);
-
-    const diff = Math.floor((today - start) / 86400000);
-    return Math.min(30, Math.max(DIET_START_DAY, DIET_START_DAY + diff));
+function updateQuoteHeart() {
+    const button = document.getElementById("dailyQuoteButton");
+    if (button) button.classList.toggle("empty", !getQuoteForDay(currentDay));
 }
-
-function openDailyQuote(){
+function openQuoteModal() {
     const modal = document.getElementById("quoteModal");
-    const dayLabel = document.getElementById("quoteDay");
-    const textBox = document.getElementById("quoteText");
-    const unlockedDay = getUnlockedDay();
-
-    if(currentDay > unlockedDay){
-        dayLabel.textContent = `${currentDay}. Gün`;
-        textBox.innerHTML = `
-            <div class="text-4xl mb-4">🤭💗</div>
-            <div class="font-bold text-slate-700 mb-2">Hop, biraz sabır güzelim!</div>
-            <div class="text-slate-500 leading-7">
-                Bu söz henüz açılmadı. ${currentDay}. günün sürprizi,
-                o gün geldiğinde seni bekliyor. 🌷<br><br>
-                Şimdilik merak etmen serbest. ❤️
-            </div>`;
-        modal.classList.add("open");
-        return;
+    const dayTitle = document.getElementById("quoteModalDay");
+    const body = document.getElementById("quoteModalBody");
+    const realDay = calculateCurrentDay();
+    const selectedDay = currentDay;
+    const quote = getQuoteForDay(selectedDay);
+    dayTitle.textContent = `${selectedDay}. Gün`;
+    if (selectedDay > realDay) {
+        body.innerHTML = `<div class="text-4xl mb-4">🤭</div><p class="font-bold text-slate-800 text-xl">Hop, biraz sabır güzelim!</p><p class="mt-3 text-slate-500">${selectedDay}. günün sözü henüz açılmadı. O gün geldiğinde seni bekleyen küçük bir sürpriz var. 🌷</p><p class="mt-4 text-sm text-pink-400 font-semibold">Şimdilik merak etmek serbest. ❤️</p>`;
+    } else if (!quote) {
+        body.innerHTML = `<div class="text-4xl mb-4">🌷</div><p class="text-slate-500">Bu gün için henüz bir söz eklenmemiş.</p>`;
+    } else {
+        body.innerHTML = `<div class="text-4xl mb-4">“</div><p class="font-medium text-slate-700">${escapeHtml(quote)}</p><p class="mt-5 text-sm text-pink-400 font-semibold">Bugün de yanındayım. ❤️</p>`;
     }
-
-    const text=getTodayQuote();
-    if(!text) return;
-    dayLabel.textContent=`${currentDay}. Gün`;
-    textBox.textContent=text;
-    modal.classList.add("open");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
 }
-function closeDailyQuote(){document.getElementById("quoteModal").classList.remove("open");}
-document.getElementById("dailyQuoteButton").addEventListener("click",openDailyQuote);
-document.getElementById("closeQuoteButton").addEventListener("click",closeDailyQuote);
-document.getElementById("quoteModal").addEventListener("click",e=>{if(e.target.id==="quoteModal")closeDailyQuote();});
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDailyQuote();});
+function closeQuoteModal() {
+    const modal = document.getElementById("quoteModal");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+}
+document.getElementById("dailyQuoteButton").addEventListener("click", openQuoteModal);
+document.getElementById("closeQuoteModal").addEventListener("click", closeQuoteModal);
+document.getElementById("quoteModalCloseButton").addEventListener("click", closeQuoteModal);
+document.getElementById("quoteModal").addEventListener("click", event => {
+    if (event.target.id === "quoteModal") closeQuoteModal();
+});
 
 /* =====================================================
    İLAÇLAR
