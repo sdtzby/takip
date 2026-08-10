@@ -264,11 +264,28 @@ function renderQuotesAdmin(quotes){
    c.appendChild(row);
  }
 }
+async function loadQuotes(){
+ const snap=await getDoc(doc(db,"ayarlar","gunlukSozler"));
+ renderQuotesAdmin(snap.exists() ? (snap.data().quotes || {}) : {});
+}
 $("saveQuotesBtn").addEventListener("click",async()=>{
  const quotes={};
- document.querySelectorAll(".quote-editor").forEach(row=>{const text=row.querySelector(".quote-input").value.trim();if(text)quotes[row.dataset.day]=text;});
+ document.querySelectorAll(".quote-editor").forEach(row=>{
+   const text=row.querySelector(".quote-input").value.trim();
+   if(text) quotes[row.dataset.day]=text;
+ });
  const b=$("saveQuotesBtn");b.disabled=true;b.textContent="Kaydediliyor...";
- try{await setDoc(doc(db,"ayarlar","genel"),{gunlukSozler:quotes},{merge:true});b.textContent="✓ Günün Sözleri Kaydedildi";showMessage("✓ Günün sözleri başarıyla kaydedildi.");setTimeout(()=>{b.disabled=false;b.textContent="💾 Günün Sözlerini Kaydet"},1800)}catch(e){console.error(e);b.disabled=false;b.textContent="💾 Günün Sözlerini Kaydet";showMessage("Sözler kaydedilemedi: "+e.message,false)}
+ try{
+   await setDoc(doc(db,"ayarlar","gunlukSozler"),{quotes},{merge:true});
+   b.textContent="✓ Günün Sözleri Kaydedildi";
+   showMessage("✓ Günün sözleri başarıyla kaydedildi.");
+   setTimeout(()=>{b.disabled=false;b.textContent="💾 Günün Sözlerini Kaydet"},1800)
+ }catch(e){
+   console.error(e);
+   b.disabled=false;
+   b.textContent="💾 Günün Sözlerini Kaydet";
+   showMessage("Sözler kaydedilemedi: "+e.message,false)
+ }
 });
 function arrayToText(v){return Array.isArray(v)?v.map(x=>typeof x==="string"?x:x?.text||x?.content||x?.icerik||"").filter(Boolean).join("\n"):v||""}
 $("saveTasksBtn").addEventListener("click",async()=>{
