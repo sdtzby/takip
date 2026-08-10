@@ -55,6 +55,7 @@ body{background:#f7faf8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
           <button class="sidebar-btn text-left px-4 py-3 rounded-2xl font-semibold" data-section="meds">💊 <span class="hidden sm:inline lg:inline">İlaçlar</span></button>
           <button class="sidebar-btn text-left px-4 py-3 rounded-2xl font-semibold" data-section="tasks">✅ <span class="hidden sm:inline lg:inline">Görevler</span></button>
           <button class="sidebar-btn text-left px-4 py-3 rounded-2xl font-semibold" data-section="notes">📝 <span class="hidden sm:inline lg:inline">Önemli Notlar</span></button>
+          <button class="sidebar-btn text-left px-4 py-3 rounded-2xl font-semibold" data-section="quotes">❤️ <span class="hidden sm:inline lg:inline">Günün Sözleri</span></button>
           <button class="sidebar-btn text-left px-4 py-3 rounded-2xl font-semibold" data-section="settings">⚙️ <span class="hidden sm:inline lg:inline">Ayarlar</span></button>
         </nav>
       </div>
@@ -88,6 +89,9 @@ body{background:#f7faf8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
           </button>
           <button data-go="notes" class="text-left bg-white rounded-3xl border border-slate-100 shadow-sm p-5 hover:shadow-md">
             <div class="text-3xl mb-3">📝</div><div class="font-bold">Önemli Notlar</div><p class="text-sm text-slate-500 mt-1">Notları düzenle</p>
+          </button>
+          <button data-go="quotes" class="text-left bg-white rounded-3xl border border-slate-100 shadow-sm p-5 hover:shadow-md">
+            <div class="text-3xl mb-3">❤️</div><div class="font-bold">Günün Sözleri</div><p class="text-sm text-slate-500 mt-1">Her güne özel söz ekle</p>
           </button>
         </div>
       </section>
@@ -133,6 +137,15 @@ body{background:#f7faf8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
           <div id="notesContainer" class="space-y-4"></div>
           <button id="addNoteBtn" class="w-full mt-4 py-4 rounded-2xl bg-amber-100 text-amber-700 font-semibold">+ Önemli Not Ekle</button>
           <button id="saveNotesBtn" class="w-full mt-3 py-4 rounded-2xl bg-slate-800 text-white font-semibold">💾 Önemli Notları Kaydet</button>
+        </div>
+      </section>
+
+      <section id="section-quotes" class="section-panel">
+        <div class="mb-5"><p class="text-sm text-slate-400">Her gün için ayrı</p><h2 class="text-2xl font-bold mt-1">❤️ Günün Sözleri</h2></div>
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+          <p class="text-sm text-slate-500 mb-5">Eşiniz uygulamayı açtığında sağ üstteki kalbe dokunarak o güne ait sözü görecek.</p>
+          <div id="quotesContainer" class="space-y-4"></div>
+          <button id="saveQuotesBtn" class="w-full mt-5 py-5 rounded-3xl bg-pink-500 hover:bg-pink-600 text-white font-bold text-lg">💾 Günün Sözlerini Kaydet</button>
         </div>
       </section>
 
@@ -235,8 +248,28 @@ async function loadGlobal(){
  const d=snap.data();
  $("tasks").value=arrayToText(d.gorevler||[]);
  renderNotesAdmin(d.onemliNotlar||d.önemliNotlar||[]);
+ renderQuotesAdmin(d.gunlukSozler||{});
  if(d.programStartDate)$("startDate").value=d.programStartDate;
 }
+function renderQuotesAdmin(quotes){
+ const c=$("quotesContainer");
+ c.innerHTML="";
+ for(let day=3;day<=30;day++){
+   const value=quotes[String(day)];
+   const text=typeof value==="string"?value:(value?.text||value?.content||value?.icerik||"");
+   const row=document.createElement("div");
+   row.className="quote-editor bg-pink-50/60 rounded-2xl p-4 border border-pink-100";
+   row.dataset.day=day;
+   row.innerHTML=`<div class="flex items-center gap-3 mb-3"><div class="w-11 h-11 rounded-2xl bg-pink-100 flex items-center justify-center text-xl">❤️</div><div><div class="font-bold text-slate-800">${day}. Gün</div><div class="text-xs text-slate-400">Günün sözü</div></div></div><textarea class="quote-input w-full min-h-[110px] px-4 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:border-pink-300" placeholder="Bu gün için bir söz yazın...">${escapeHtml(text)}</textarea>`;
+   c.appendChild(row);
+ }
+}
+$("saveQuotesBtn").addEventListener("click",async()=>{
+ const quotes={};
+ document.querySelectorAll(".quote-editor").forEach(row=>{const text=row.querySelector(".quote-input").value.trim();if(text)quotes[row.dataset.day]=text;});
+ const b=$("saveQuotesBtn");b.disabled=true;b.textContent="Kaydediliyor...";
+ try{await setDoc(doc(db,"ayarlar","genel"),{gunlukSozler:quotes},{merge:true});b.textContent="✓ Günün Sözleri Kaydedildi";showMessage("✓ Günün sözleri başarıyla kaydedildi.");setTimeout(()=>{b.disabled=false;b.textContent="💾 Günün Sözlerini Kaydet"},1800)}catch(e){console.error(e);b.disabled=false;b.textContent="💾 Günün Sözlerini Kaydet";showMessage("Sözler kaydedilemedi: "+e.message,false)}
+});
 function arrayToText(v){return Array.isArray(v)?v.map(x=>typeof x==="string"?x:x?.text||x?.content||x?.icerik||"").filter(Boolean).join("\n"):v||""}
 $("saveTasksBtn").addEventListener("click",async()=>{
  const tasks=$("tasks").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
